@@ -742,7 +742,7 @@ if __name__== "__main__":
                        fig = 2: time series
                        fig = 3: MSE plot
                        fig = 4: firing rate vs learning rate vs variance
-                       fig = 51, 52, 53 : MSE robustness wrt to parameters
+                       fig = {51, 52, 53} : MSE robustness wrt to parameters
                        fig = 6 : MSE robustness wrt to prior dynamics
             --i : selects single row of simulation table for i>-1; -1 runs all
             --Load : skip sims; load pre-computed results and plot directly.
@@ -752,7 +752,7 @@ if __name__== "__main__":
     parser.add_argument("--Figure","-f",default=2,type=int, 
                         help="Figure to plot")
     parser.add_argument("--i","-i",default=-1,type=int,
-                        help="id on cluster with -1 local machine")        
+                        help="process id on cluster; -1 for local machine")
     parser.add_argument("--Load","-l",default=1,type=int,
                         help="if =1, skip simulation and load previous results")        
         
