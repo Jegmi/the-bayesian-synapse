@@ -32,12 +32,64 @@ import pickle
 import argparse
 from collections import OrderedDict
 
+# plt.rcParams["font.family"]
 
 # =============================================================================
 #         Helper functions
 # =============================================================================    
 
 eta = np.random.randn
+
+def get_axis_and_fig_size():
+    ax = plt.gca()        
+    fig = plt.gcf()
+    bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    width, height = bbox.width, bbox.height
+    print('axis (w,h):',[width,height])
+    print('fig size:',fig.get_size_inches()*fig.dpi)
+
+def panel_label(label, x, ax,y=1.0):
+    ax.text(x, y, f'\\textbf{{{label}}}', fontsize=23, 
+            transform=ax.transAxes, fontweight='extra bold')
+
+# rc = {
+#     "font.family": 'sans-serif',
+#     "text.usetex": True,
+#     "text.latex.preamble": r'\usepackage{sfmath}',  # allows for sans-serif numbers
+#     "axes.spines.right": False,
+#     "axes.spines.top": False,
+#     "axes.labelsize": 20,
+#     "axes.titlesize": 20,
+#     "xtick.labelsize": 20,
+#     "ytick.labelsize": 20,
+#     "lines.linewidth": 2,
+#     "legend.frameon": False,
+#     "legend.labelspacing": 0,  # vertical spacing bw legend entries
+#     "legend.handletextpad": 0.5,  # horizontal spacing bw legend markers and text
+#     "legend.fontsize": 20,
+#     "mathtext.fontset": 'cm',  # latex-like math font
+#     "savefig.dpi": 500,
+#     "savefig.transparent": True
+# }
+
+
+
+#def set_axis_and_fig_size():    
+    #axis: [334.8, 217.44]
+    #fig size: [432. 288.]
+def set_axis_size(w=4.65*1,h=3.02*1, ax=None):
+    """ w, h: width, height in inches """
+
+    # plt.gca().spines.set_position('axes',-0.1)
+    # if not ax: ax=plt.gca()
+    # l = ax.figure.subplotpars.left
+    # r = ax.figure.subplotpars.right
+    # t = ax.figure.subplotpars.top
+    # b = ax.figure.subplotpars.bottom
+    # figw = float(w)/(r-l)
+    # figh = float(h)/(t-b)
+    # ax.figure.set_size_inches(figw, figh)
+    
 
 def get_nudt(dim):
     """return sorted randomly drawn firing rates """
@@ -489,35 +541,67 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
     mp['r2t'] = {'RL':'RL','Linear':'Linear','Binary':'Cerebellar'}     
     
     if fig == 2:
+        f,axs = plt.subplots(2,3,figsize=(10,4),constrained_layout=False,
+                                                             sharey=False)
+        plt.subplots_adjust(left=0.125,
+                    bottom=0.1, 
+                    right=0.9, 
+                    top=0.9, 
+                    wspace=0.3, 
+                    hspace=0.9)
+        
+        for r,ax,axlabs in zip(['Linear','Binary','RL'],
+                              axs.T,(('a','d'),('b','e'),('c','f'))):
             
-        for r in ['Linear','Binary','RL']:
             # load
             v_ts = load_obj('fig_2_rule_{0}'.format(r),path=res_path)
             tau_ou = mp['tau_ou-dict'][r]            
             plt_dim=mp['plt-dim'][mp['plt-dim']<(100 if r=='RL' else 1000)]             
             #for i_dim in range(len(plt_dim)):
-            for i_dim in [0,len(plt_dim)-1]: # first and last
+            for i_dim,ax_i,i in zip([0,len(plt_dim)-1],ax,(0,1)): # first and last
+                plt.sca(ax_i)
                 [plt.locator_params(axis=axis, nbins=2) for axis in ['x','y']]                                    
                 plt_timeseries(v_ts,'wm',dim=i_dim,lw=lw,q=2)                
-                plt.xlabel('Time [s]'), plt.ylabel('Weight [mV]')
+                #plt.xlabel('time s')                
                 plt.ylim([0,1.5])
                 #tau_ou = 1000 if r != 'RL' else 5000
                 plt.gca().set_xticks([0,tau_ou,2*tau_ou,3*tau_ou])
-                plt.xlim([0,3*tau_ou])                    
+                plt.xlim([0,3*tau_ou])
                 plt.title(mp['r2t'][r] + r', $\nu = $' + str(round(
                                 v_ts['nu*dt'][i_dim]/dt,2)) + ' Hz')
 
-                plt.savefig(plt_path + 'fig_{2}_rule_{1}_TS_{0}.pdf'.format(
+                # suppress y-ticks & label for RL and binary:
+                if 'Linear' in r:
+                    if i==0:
+                        plt.ylabel('weight mV')
+                        plt.gca().axes.yaxis.set_ticklabels([0,1])
+                        plt.gca().axes.xaxis.set_ticklabels([])
+                    else:
+                        plt.xlabel('time s')
+                        plt.gca().axes.yaxis.set_ticklabels([])
+                elif r in ('RL','Binary') and i==1:                    
+                    plt.gca().axes.yaxis.set_ticklabels([])
+                else:
+                    plt.gca().axes.xaxis.set_ticklabels([])
+                    plt.gca().axes.yaxis.set_ticklabels([])                    
+                panel_label(axlabs[i],-0.22 if r=='Linear' else -0.15,ax_i,y=1.4)
+                    
+
+        plt.savefig(plt_path + 'fig_{2}_rule_{1}_TS_{0}.pdf'.format(
                         plt_dim[i_dim],r,fig),dpi=300,bbox_inches='tight')
-                plt.show(),plt.close()
+        plt.show(),plt.close()
 
     # fig 3: MSE, not on cluster
     if fig == 3 and my_args.i == -1: # MSE, not on cluster
         out = get_df(res_path,contains_str='fig_3')
         y = 'MSE'        
-        ymax = {'RL':0.25, 'Linear':0.125, 'Binary':0.25}        
-        for r in [r for r in out.rule.unique() if '-Grad' not in r]:                                    
+        ymax = {'RL':0.25, 'Linear':0.125, 'Binary':0.25}
+        f,axs = plt.subplots(1,3,figsize=(9,4),constrained_layout=True)
+        rules = np.array([r for r in out.rule.unique() if '-Grad' not in r])
+        for r,i in zip(rules[[1,2,0]],range(3)):
             out2 = out[out.rule.apply(lambda ri: (r in ri))].sort_values('lr')
+
+            plt.sca(axs[i])
             
             bMSE = out2[out2.rule==r][y].values[0]
             bxplt = out[out.rule=='Linear-Grad']['lr'].values
@@ -531,23 +615,37 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
             if mp['log_scale']:
                 plt_set_logxticks([0.0001,0.001,0.01])
                 plt.xlim([0.0001,0.1])
-            plt.ylim([0,ymax[r]])
-            [plt.locator_params(axis=axis, nbins=2) for axis in ['y']]
-            plt.gca().legend(loc=4,ncol=2)#loc=1 if r == 'RL' else 4)
-            plt.xlabel(r'Learning rate $\eta$')
-            plt.ylabel(y)
+            #plt.ylim([0,ymax[r]])
+            [plt.locator_params(axis=axis, nbins=2) for axis in ['y']]            
+            plt.xlabel(r'learning rate $\eta$')
+            plt.gca().set_yticks([0,0.1])
+            plt.ylim([0,0.16])
+            
+            # suppress for RL and binary:
+            if 'Linear' in r:
+                get_axis_and_fig_size()
+                plt.gca().legend(loc=2,ncol=1,prop={'size':18})#loc=1 if r == 'RL' else 4)                        
+                plt.ylabel(y)
+            else:
+                plt.xlabel('')
+                plt.gca().axes.xaxis.set_ticklabels([])
+                plt.gca().axes.yaxis.set_ticklabels([])
+            #     set_axis_size()
+                                 
+            panel_label(('a','b','c')[i], (-.22,-0.15,-0.15)[i], axs[i],y=1.15)
+                
             plt.title(mp['r2t'][r])
-            plt.savefig(plt_path + 'fig3_MSE_rule_{0}.pdf'.format(r),
+        plt.savefig(plt_path + 'fig3_MSE_rule_{0}.pdf'.format(r),
                     dpi=300,bbox_inches='tight')
-            plt.show(), plt.close()
+        plt.show(), plt.close()
 
                 
     # fig 5 # robustness (keep gm const), not on cluster
     elif '5' == str(fig)[0] and my_args.i == -1:   
         
-        id2lab = {1:r'Prior mean, $m_{\rm{prior}}/m_{\rm{prior, theory}}$', 
-                  2:r'Prior variance, $s^2_{\rm{prior}}/s_{\rm{prior, theory}}^{2}$',
-                  3:r'Membrane noise, $\sigma_{0}/\sigma_{0, \rm{theory}}$',}        
+        id2lab = {1:r'prior mean, $m_{\rm{prior}}/m_{\rm{prior, theory}}$', 
+                  2:r'prior variance, $s^2_{\rm{prior}}/s_{\rm{prior, theory}}^{2}$',
+                  3:r'membrane noise, $\sigma_{0}/\sigma_{0, \rm{theory}}$',}        
         
         id2tit = {1:r'$m_{\rm{prior, theory}} = -0.669$', 
           2:r'$s_{\rm{prior, theory}}^{2} = 0.07448$',
@@ -618,9 +716,9 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
         mp['r2t'] = {'RL':'RL','Linear':'Linear','Binary':'Cerebellar'}
         
         lab = {}
-        lab['s2_m'] = r'Norm. variability, $\langle \sigma^2_i/ \mu_i \rangle_t$'
-        lab['dm_m'] = r'Norm. learn. rate, $\langle |\Delta \mu_i|/\mu_i \rangle_t$'
-        lab['nu'] = r'Input firing rate, $\nu_i$'
+        lab['s2_m'] = r'norm. variability, $\langle \sigma^2_i/ \mu_i \rangle_t$'
+        lab['dm_m'] = r'norm. learn. rate, $\langle |\Delta \mu_i|/\mu_i \rangle_t$'
+        lab['nu'] = r'input firing rate, $\nu_i$'
                 
         # derive label from fit
         labf = lambda a,nu0,n=3 : 'Fit: ' + r'$a=$' + str(round(a,n)
@@ -749,7 +847,7 @@ if __name__== "__main__":
     """
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--Figure","-f",default=2,type=int, 
+    parser.add_argument("--Figure","-f",default=3,type=int, 
                         help="Figure to plot")
     parser.add_argument("--i","-i",default=-1,type=int,
                         help="process id on cluster; -1 for local machine")
