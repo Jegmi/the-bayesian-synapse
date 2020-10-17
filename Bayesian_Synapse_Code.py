@@ -25,12 +25,57 @@ import itertools as it
 import pandas as pd
 from time import time
 from scipy.optimize import fmin
-matplotlib.rcParams.update({'font.size': 15})
-fontsize = 15
+fontsize = 9
+matplotlib.rcParams.update({'font.size': fontsize, 
+                            'xtick.labelsize': fontsize,
+                            'ytick.labelsize': fontsize,
+                            'legend.fontsize':fontsize,
+                            'axes.titlesize':fontsize,
+                            'axes.labelsize':fontsize                            
+                            })
+
 import os
 import pickle
 import argparse
 from collections import OrderedDict
+
+import seaborn as sns
+
+# Set up matplotlib parameters
+rc = {
+    "font.family": 'sans-serif',
+    "text.usetex": True,
+    "text.latex.preamble": r'\usepackage{sfmath}',  # allows for sans-serif numbers
+    "axes.spines.right": False,
+    "axes.spines.top": False,
+    "axes.labelsize": 20,
+    "axes.titlesize": 20,
+    "xtick.labelsize": 20,
+    "ytick.labelsize": 20,
+    "lines.linewidth": 2,
+    "legend.frameon": False,
+    "legend.labelspacing": 0,  # vertical spacing bw legend entries
+    "legend.handletextpad": 0.5,  # horizontal spacing bw legend markers and text
+    "legend.fontsize": 20,
+    "mathtext.fontset": 'cm',  # latex-like math font
+    "savefig.dpi": 500,
+    "savefig.transparent": True
+}
+
+rc.update({'font.size': fontsize, 
+                            'xtick.labelsize': fontsize,
+                            'ytick.labelsize': fontsize,
+                            'legend.fontsize':fontsize,
+                            'axes.titlesize':fontsize,
+                            'axes.labelsize':fontsize                            
+                            })
+
+sns.set(
+    context="paper",
+    style="ticks",
+    rc=rc
+)
+
 
 # plt.rcParams["font.family"]
 
@@ -49,7 +94,7 @@ def get_axis_and_fig_size():
     print('fig size:',fig.get_size_inches()*fig.dpi)
 
 def panel_label(label, x, ax,y=1.0):
-    ax.text(x, y, f'\\textbf{{{label}}}', fontsize=23, 
+    ax.text(x, y, f'\\textbf{{{label}}}', fontsize=18, 
             transform=ax.transAxes, fontweight='extra bold')
 
 # rc = {
@@ -476,24 +521,55 @@ class Fit(object):
         plt.plot(xlin,ylin,c=c,label=label,lw=lw,alpha=alpha,marker=None)
 
         
-def plt_set_logxticks(xticks,ax=None):    
+def plt_set_logxticks(xticks,ax=None,use_sci_format=False):    
     """ use log x axis and place ticks at exact locations """
     ax = plt.gca() if ax is None else ax
     ax.set_xscale('log')
     ax.xaxis.set_major_formatter(matplotlib.ticker.NullFormatter())
     ax.xaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
     ax.set_xticks(xticks)
-    formatter = FuncFormatter(lambda y, _: '{:.16g}'.format(y))
+    if use_sci_format == False:
+        formatter = FuncFormatter(lambda y, _: '{:.16g}'.format(y))
+    else:
+        formatter = FuncFormatter(lambda y, _: format_tex(y))
     ax.get_xaxis().set_major_formatter(formatter)
 
-def plt_set_logyticks(yticks,ax=None):    
+def format_tex(float_number):
+    exponent = np.floor(np.log10(float_number))
+    mantissa = float_number/10**exponent
+    mantissa_format = str(mantissa)[0:3]
+    if mantissa == 1:
+        return "$10^{{{0}}}$".format(str(int(exponent)))
+    else:
+        return "${0}\times10^{{{1}}}$"\
+           .format(mantissa_format, str(int(exponent)))
+
+# def float_exponent_notation(float_number, precision_digits, format_type="g"):
+#     """
+#     Returns a string representation of the scientific
+#     notation of the given number formatted for use with
+#     LaTeX or Mathtext, with `precision_digits` digits of
+#     mantissa precision, printing a normal decimal if an
+#     exponent isn't necessary.
+#     """
+#     e_float = "{0:.{1:d}{}}".format(float_number, precision_digits, format_type)
+#     if "e" not in e_float:
+#         return "${}$".format(e_float)
+#     mantissa, exponent = e_float.split("e")
+#     cleaned_exponent = exponent.strip("+")
+#     return "${0} \\times 10^{{{1}}}$".format(mantissa, cleaned_exponent)
+
+def plt_set_logyticks(yticks,ax=None,use_sci_format=False):    
     """ use log x axis and place ticks at exact locations """
     ax = plt.gca() if ax is None else ax
     ax.set_yscale('log')
     ax.yaxis.set_major_formatter(matplotlib.ticker.NullFormatter())
     ax.yaxis.set_minor_formatter(matplotlib.ticker.NullFormatter())
     ax.set_yticks(yticks)
-    formatter = FuncFormatter(lambda y, _: '{:.16g}'.format(y))
+    if use_sci_format == False:
+        formatter = FuncFormatter(lambda y, _: '{:.16g}'.format(y))
+    else:
+        formatter = FuncFormatter(lambda y, _: format_tex(y))        
     ax.get_yaxis().set_major_formatter(formatter)
 
 def rotate_xticks(rotation=0):
@@ -523,7 +599,7 @@ def plt_timeseries(v,key,dim=0,lw=2,q=2):
         plt.plot(v['tspan'],yplt,'r',linewidth=lw)
 
       
-def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
+def plt_figs(fig,mp,lw=3,fontsize=8,plt_path='./',res_path='./'):
     """ main plotting fct: generate fig in manuscript and save in plt_path.
         data for figs is loaded from res_path. 
         
@@ -541,14 +617,15 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
     mp['r2t'] = {'RL':'RL','Linear':'Linear','Binary':'Cerebellar'}     
     
     if fig == 2:
-        f,axs = plt.subplots(2,3,figsize=(10,4),constrained_layout=False,
+        f,axs = plt.subplots(2,3,figsize=(7.2,6),constrained_layout=False,
                                                              sharey=False)
         plt.subplots_adjust(left=0.125,
                     bottom=0.1, 
                     right=0.9, 
                     top=0.9, 
                     wspace=0.3, 
-                    hspace=0.9)
+                    hspace=0.6)
+    
         
         for r,ax,axlabs in zip(['Linear','Binary','RL'],
                               axs.T,(('a','d'),('b','e'),('c','f'))):
@@ -566,29 +643,37 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
                 plt.ylim([0,1.5])
                 #tau_ou = 1000 if r != 'RL' else 5000
                 plt.gca().set_xticks([0,tau_ou,2*tau_ou,3*tau_ou])
-                plt.xlim([0,3*tau_ou])
+                plt.xlim([0,3*tau_ou])                
                 plt.title(mp['r2t'][r] + r', $\nu = $' + str(round(
                                 v_ts['nu*dt'][i_dim]/dt,2)) + ' Hz')
 
                 # suppress y-ticks & label for RL and binary:
                 if 'Linear' in r:
                     if i==0:
-                        plt.ylabel('weight mV')
-                        plt.gca().axes.yaxis.set_ticklabels([0,1])
                         plt.gca().axes.xaxis.set_ticklabels([])
                     else:
-                        plt.xlabel('time s')
+                        plt.xlabel('time (s)')
                         plt.gca().axes.yaxis.set_ticklabels([])
-                elif r in ('RL','Binary') and i==1:                    
+                    plt.ylabel('weight (mV)')
+                    plt.gca().axes.yaxis.set_ticklabels([0,1])
+                        
+                elif r in ('RL','Binary') and i==1:
                     plt.gca().axes.yaxis.set_ticklabels([])
                 else:
                     plt.gca().axes.xaxis.set_ticklabels([])
                     plt.gca().axes.yaxis.set_ticklabels([])                    
-                panel_label(axlabs[i],-0.22 if r=='Linear' else -0.15,ax_i,y=1.4)
+                panel_label(axlabs[i],-0.22 if r=='Linear' else -0.15,ax_i,y=1.2)
+                
+                if i==1:
+                    plt.xlabel('time s')
+                    #plt.gca().axes.yaxis.set_ticklabels([])
                     
 
-        plt.savefig(plt_path + 'fig_{2}_rule_{1}_TS_{0}.pdf'.format(
-                        plt_dim[i_dim],r,fig),dpi=300,bbox_inches='tight')
+        #plt.savefig(plt_path + 'fig_{2}_rule_{1}_TS_{0}.pdf'.format(
+         #               plt_dim[i_dim],r,fig),dpi=300,bbox_inches='tight')
+        plt.savefig(plt_path + 'fig2.pdf',dpi=300,bbox_inches='tight')
+
+        
         plt.show(),plt.close()
 
     # fig 3: MSE, not on cluster
@@ -596,7 +681,8 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
         out = get_df(res_path,contains_str='fig_3')
         y = 'MSE'        
         ymax = {'RL':0.25, 'Linear':0.125, 'Binary':0.25}
-        f,axs = plt.subplots(1,3,figsize=(9,4),constrained_layout=True)
+        f,axs = plt.subplots(1,3,figsize=(7.2,3),constrained_layout=True)
+        
         rules = np.array([r for r in out.rule.unique() if '-Grad' not in r])
         for r,i in zip(rules[[1,2,0]],range(3)):
             out2 = out[out.rule.apply(lambda ri: (r in ri))].sort_values('lr')
@@ -613,8 +699,13 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
                      label='Bayesian')
             
             if mp['log_scale']:
-                plt_set_logxticks([0.0001,0.001,0.01])
+                plt_set_logxticks([0.0001,0.001,0.01],use_sci_format=True)
                 plt.xlim([0.0001,0.1])
+                #plt.ticklabel_format(axis="x", style="sci", scilimits=(0,0))
+                #logfmt = matplotlib.ticker.LogFormatterExponent(base=10.0, 
+                #                                        labelOnlyBase=True)
+                #plt.gca().xaxis.set_major_formatter(logfmt)
+
             #plt.ylim([0,ymax[r]])
             [plt.locator_params(axis=axis, nbins=2) for axis in ['y']]            
             plt.xlabel(r'learning rate $\eta$')
@@ -624,19 +715,20 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
             # suppress for RL and binary:
             if 'Linear' in r:
                 get_axis_and_fig_size()
-                plt.gca().legend(loc=2,ncol=1,prop={'size':18})#loc=1 if r == 'RL' else 4)                        
+                plt.gca().legend(loc=2,ncol=1,prop={'size':fontsize})#loc=1 if r == 'RL' else 4)                        
                 plt.ylabel(y)
             else:
-                plt.xlabel('')
-                plt.gca().axes.xaxis.set_ticklabels([])
+                #plt.xlabel('')
+                #plt.gca().axes.xaxis.set_ticklabels([])
                 plt.gca().axes.yaxis.set_ticklabels([])
             #     set_axis_size()
                                  
             panel_label(('a','b','c')[i], (-.22,-0.15,-0.15)[i], axs[i],y=1.15)
                 
             plt.title(mp['r2t'][r])
-        plt.savefig(plt_path + 'fig3_MSE_rule_{0}.pdf'.format(r),
-                    dpi=300,bbox_inches='tight')
+        #plt.savefig(plt_path + 'fig3_MSE_rule_{0}.pdf'.format(r),
+         #           dpi=300,bbox_inches='tight')
+        plt.savefig(plt_path + 'fig3.pdf',dpi=300,bbox_inches='tight')
         plt.show(), plt.close()
 
                 
@@ -653,8 +745,20 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
         
         r2c = {'Linear':'r','Binary':'gray','RL':'k'}
         #r2loc = {'Linear':'r','Binary':'gray','RL':'k'}
+    
+        f,axs = plt.subplots(2,2,figsize=(7.2,6),constrained_layout=False,
+                                                             sharey=False)
+        axs = axs.reshape(-1)
+        plt.subplots_adjust(left=0.125,
+                    bottom=0.1,
+                    right=0.9,
+                    top=0.9, 
+                    wspace=0.3, 
+                    hspace=0.6)
 
-        for plt_id in [1,2,3]: # hyperparameters
+        for plt_id,ax,llab in zip([1,2,3],axs[:3],('a','b','c')): # hyperparameters
+
+            plt.sca(ax)
 
             out = get_df(res_path,contains_str='fig_5{0}'.format(plt_id))
             x = {1:'mu_ou', 2:'sig2_ou', 3:'sig0u'}[plt_id]            
@@ -678,17 +782,19 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
             
             ncol = 1 #2 if plt_id == 1 else 1
             plt.gca().legend(ncol=ncol,loc= None if plt_id < 3 else 2,
-                   prop={'size':16})
+                   prop={'size':fontsize})
             plt.xlabel(id2lab[plt_id])            
             plt.ylabel(y)
             plt.title(id2tit[plt_id] + str())
             plt_set_logxticks([0.5,1,2])
+            panel_label(llab,x=-0.22, ax=ax,y=1.2) #if r=='Linear' else -0.15,
             
-            plt.savefig(plt_path + 'figS2_MSE_robustness_{0}.pdf'.format(x),
-                        dpi=300,bbox_inches='tight'),plt.show(),plt.close()
-            plt.show(), plt.close()
+            #plt.savefig(plt_path + 'figS2_MSE_robustness_{0}.pdf'.format(x),
+            #            dpi=300,bbox_inches='tight'),plt.show(),plt.close()
+            #plt.show(), plt.close()
 
-    elif fig == 6 and my_args.i == -1: ## robustness vs OU
+    #elif fig == 6 and my_args.i == -1: ## robustness vs OU
+        plt.sca(axs[-1])
         # load
         out = get_df(res_path,contains_str='fig_6')
         y = 'MSE'
@@ -702,10 +808,14 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
         [plt.locator_params(axis=axis, nbins=2) for axis in ['y']]        
         plt.gca().set_xticklabels(out2['w-dynamic'])
         rotate_xticks()         
-        boxplot_legend(out2.rule.unique(),['r','gray','k'],alpha=0.6,loc=4)
-        plt.title(r'Robustness: prior dynamics')        
-        plt.savefig(plt_path + 'fig6_MSE_robustness_OU.pdf',dpi=300,
-                                                        bbox_inches='tight')
+        boxplot_legend(out2.rule.unique(),['r','gray','k'],alpha=0.6,loc=2)
+        plt.title(r'Robustness: prior dynamics')
+        panel_label('d',x=-0.22, ax=axs[-1],y=1.2) #if r=='Linear' else -0.15,
+        #plt.savefig(plt_path + 'fig_6_MSE_robustness_OU.pdf',dpi=300,
+         #                                               bbox_inches='tight')
+        plt.savefig(plt_path + 'fig_SI_3.pdf',dpi=300,bbox_inches='tight')
+
+        
         plt.show(),plt.close()
         
 
@@ -721,29 +831,36 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
         lab['nu'] = r'input firing rate, $\nu_i$'
                 
         # derive label from fit
-        labf = lambda a,nu0,n=3 : 'Fit: ' + r'$a=$' + str(round(a,n)
-                                        ) + r', $\nu_0=$' + str(round(nu0,n))
+        #labf = lambda a,nu0,n=3 : 'Fit: ' + r'$a=$' + str(round(a,n)
+        #                                ) + r', $\nu_0=$' + str(round(nu0,n))
+        labf = lambda a,nu0,n=3 : 'Fit'
         
         # load dict in alphabetical order
         outs = [load_obj(file[:-4],res_path) for file in 
              sorted(os.listdir(res_path)) if (file.endswith(".pkl") and 'fig_4' in file)] # and file.startswith("Supp")]
         # run rules in alphabetical order
-        rules = ['Binary','Linear','RL'] # [r for r in mp['rules'] if '-Grad' not in r]
-        for r,out in zip(rules,outs):            
-            
+        rules = ['Linear','Binary','RL'] # [r for r in mp['rules'] if '-Grad' not in r]
+        
+        fig1, axs1 = plt.subplots(1,3,figsize=(7.2,3),sharey=False)
+        
+        plt.subplots_adjust(wspace=0.9, hspace=0.6)
+
+        
+        for r,out,ax1 in zip(rules,outs,axs1):
+                        
             dm_m = out['dm_m']
             s2_m = out['s2_m']            
             nu = out['nu']
                         
             ### Fig 1: x=s2/m y=dm/m ###
-    
+            plt.sca(ax1)
+        
             ## plot
             T = np.log if mp['log_scale'] else lambda x:x
     
             xplt, yplt = s2_m, dm_m
             plt.scatter(s2_m,dm_m,color='k',alpha=0.5,s=s,label='Simulation')
-            plt.xlabel(lab['s2_m'])
-            plt.ylabel(lab['dm_m'])
+            plt.xlabel(lab['s2_m'])            
             plt.title('{0}'.format(mp['r2t'][r]))
 
             slope = 1               
@@ -754,7 +871,9 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
                 plt.plot(xplt,xplt*slope + out[0], c='r',label='Theory, slope 1/2')
             
             ## make nice and save
-            plt.gca().legend()
+            if r=='Linear':
+                plt.gca().legend(prop={'size':8})
+                plt.ylabel(lab['dm_m'])
             if mp['log_scale']:
                 plt_set_logxticks([0.005,0.01,0.05])
                 plt_set_logyticks([0.001,0.01])
@@ -763,41 +882,69 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
                     plt.ylim([0.001,0.003])
                 else:
                     plt.xlim([0.003,0.05])
-            print(plt.gca().get_xlim())
-            plt.savefig(plt_path + 'dm_m_vs_s2_m_{0}.pdf'.format(r),dpi=300,bbox_inches='tight')
-            plt.show(),plt.close()
+            #print(plt.gca().get_xlim())
+            r2lab = {'Linear':'a','Binary':'b','RL':'c'}
+            panel_label(r2lab[r],-0.22 if r=='Linear' else -0.15,ax1,y=1.15)
+
+                    
+        plt.savefig(plt_path + 'fig_SI_1.pdf',dpi=300,bbox_inches='tight')
+        plt.show(),plt.close()
         
+        fig2, axs2 = plt.subplots(2,3,figsize=(7.2,6),sharex=True,sharey=False)
+        plt.subplots_adjust(left=0.125,
+                    bottom=0.1, 
+                    right=0.9, 
+                    top=0.9, 
+                    wspace=0.7, 
+                    hspace=0.6)
+                
+        for r,out,ax2 in zip(rules,outs,axs2.T):                        
+            dm_m = out['dm_m']
+            s2_m = out['s2_m']            
+            nu = out['nu']
+                    
+            
             ### Fig 2: x=nu y=dm/m ###                
+            plt.sca(ax2[0])
+            
             T = np.log if mp['log_scale'] else lambda x:x
     
             ## plot 
             xplt, yplt = nu/dt, dm_m
             plt.scatter(xplt,yplt,color='k',alpha=0.5,s=s,label='Simulation')                            
-            plt.xlabel(lab['nu']) # plt.xlabel(r'Input rate $\nu_i$')
-            plt.ylabel(lab['dm_m'])
+            #plt.xlabel(lab['nu']) # plt.xlabel(r'Input rate $\nu_i$')
+            if r == 'Linear':
+                plt.ylabel(lab['dm_m'])                
             plt.title('{0}'.format(mp['r2t'][r]))
             fit = Fit(xplt,yplt)
             fit.fit(lambda x,th: th[0]/x*( (xplt/sigm(th[1]) + 1)**0.5 - 1),[1,1])
             a, nu0 = fit.th[0], sigm(fit.th[1])
             yplt_fit = a/xplt*( (xplt/nu0 + 1)**0.5 - 1)
             plt.plot(xplt,yplt_fit,c='r',label=labf(a,nu0),lw=lw)            
-            plt_set_logxticks([0.1,1,10])
+            plt_set_logxticks([0.1,1,10],use_sci_format=True)
             if r=='RL':
                 plt_set_logyticks([0.001,0.005])
                 plt.ylim([0.001,0.005])
             else:
-                plt_set_logyticks([0.001,0.01,0.1])                        
-            plt.gca().legend()      
-            plt.savefig(plt_path + 'dm_m_vs_nu_{0}.pdf'.format(r),dpi=300,bbox_inches='tight')
-            plt.show(),plt.close()
+                plt_set_logyticks([0.001,0.01,0.1])
+                if r == 'Linear':
+                    plt.gca().legend(ncol=1,prop={'size':10})
+            r2lab = {'Linear':'a','Binary':'b','RL':'c'}
+            panel_label(r2lab[r],-0.22 if r=='Linear' else -0.15,ax2[0],y=1.2)
+
+            
+            #plt.savefig(plt_path + 'dm_m_vs_nu_{0}.pdf'.format(r),dpi=300,bbox_inches='tight')
+            #plt.show(),plt.close()
     
             ### Fig 3: x=nu y=s2/m ###
             
             ## plot
+            plt.sca(ax2[1])
             xplt, yplt = nu/dt, s2_m
             plt.scatter(xplt,yplt,color='k',alpha=0.5,s=s,label='Simulation')
             plt.xlabel(lab['nu'])
-            plt.ylabel(lab['s2_m'])
+            if r == 'Linear':
+                plt.ylabel(lab['s2_m'])
             plt.title('{0}'.format(mp['r2t'][r]))
             
             ## add lines (fit only synapses with 2 Hz) TODO: not sure what's needed?
@@ -807,20 +954,26 @@ def plt_figs(fig,mp,lw=3,fontsize=18,plt_path='./',res_path='./'):
             yplt_fit = a/xplt*( (xplt/nu0 + 1)**0.5 - 1)
             plt.plot(xplt,yplt_fit,c='r',label=labf(a,nu0),lw=lw)            
             plt.gca().set_yscale('log') ,plt.gca().set_xscale('log')
-            plt.gca().legend()                        
-            
+
+
             ## make nice and save
-            plt.gca().legend()
+            #plt.gca().legend()
             if mp['log_scale']:
                 #plt.gca().set_xscale('log')
-                plt_set_logxticks([0.1,1,10])
+                plt_set_logxticks([0.1,1,10],use_sci_format=True)
                 if r=='RL':
                     plt_set_logyticks([0.02,0.05])
                     plt.ylim([0.02,0.05])
                 else:
-                    plt_set_logyticks([0.001,0.01,0.1])
-            plt.savefig(plt_path + 's2_m_vs_nu_{0}.pdf'.format(r),dpi=300,bbox_inches='tight')
-            plt.show(),plt.close()    
+                    plt_set_logyticks([0.001,0.01,0.1],use_sci_format=True)
+            r2lab = {'Linear':'d','Binary':'e','RL':'f'}
+            panel_label(r2lab[r],-0.22 if r=='Linear' else -0.15,ax2[1],y=1.2)
+                                        
+        plt.savefig(plt_path + 'fig_SI_2.pdf',dpi=300,bbox_inches='tight')
+        plt.show(),plt.close()
+        
+            #plt.savefig(plt_path + 's2_m_vs_nu_{0}.pdf'.format(r),dpi=300,bbox_inches='tight')
+            #plt.show(),plt.close()    
     
     
 np.random.seed(4) # set random seed
@@ -847,7 +1000,7 @@ if __name__== "__main__":
     """
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--Figure","-f",default=3,type=int, 
+    parser.add_argument("--Figure","-f",default=53,type=int, 
                         help="Figure to plot")
     parser.add_argument("--i","-i",default=-1,type=int,
                         help="process id on cluster; -1 for local machine")
@@ -1104,6 +1257,6 @@ if __name__== "__main__":
             save_obj(tab,'fig_{1}_id_{0}'.format(my_args.i,fig),res_path)
 
     #### Plotting
-    plt_figs(fig=fig,mp=mp,lw=2,fontsize=18,
+    plt_figs(fig=fig,mp=mp,lw=2,fontsize=fontsize,
              plt_path=plt_path,res_path=res_path)
     

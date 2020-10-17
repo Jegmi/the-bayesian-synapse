@@ -14,7 +14,7 @@ import os
 os.system("python rnn_figs.py")
 
 # all other plots
-for fig_id in (2,3,4,51,52,53,6):
+for fig_id in (2,3,4,51):
     os.system("python Bayesian_Synapse_Code.py -f {0}".format(fig_id))
 
 #def panel_label(label, x, ax):
