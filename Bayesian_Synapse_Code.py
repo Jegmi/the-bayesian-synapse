@@ -638,7 +638,7 @@ def plt_figs(fig,mp,lw=3,fontsize=8,plt_path='./',res_path='./'):
             for i_dim,ax_i,i in zip([0,len(plt_dim)-1],ax,(0,1)): # first and last
                 plt.sca(ax_i)
                 [plt.locator_params(axis=axis, nbins=2) for axis in ['x','y']]                                    
-                plt_timeseries(v_ts,'wm',dim=i_dim,lw=lw,q=2)                
+                plt_timeseries(v_ts,'wm',dim=i_dim,lw=0.3,q=2)                
                 #plt.xlabel('time s')                
                 plt.ylim([0,1.5])
                 #tau_ou = 1000 if r != 'RL' else 5000
@@ -699,7 +699,7 @@ def plt_figs(fig,mp,lw=3,fontsize=8,plt_path='./',res_path='./'):
                      label='Bayesian')
             
             if mp['log_scale']:
-                plt_set_logxticks([0.0001,0.001,0.01],use_sci_format=True)
+                plt_set_logxticks([0.0001,0.001,0.01,0.1],use_sci_format=True)
                 plt.xlim([0.0001,0.1])
                 #plt.ticklabel_format(axis="x", style="sci", scilimits=(0,0))
                 #logfmt = matplotlib.ticker.LogFormatterExponent(base=10.0, 
@@ -822,7 +822,10 @@ def plt_figs(fig,mp,lw=3,fontsize=8,plt_path='./',res_path='./'):
     # fig 4: supp plots and fits
     elif fig == 4 and my_args.i == -1:
 
-        s = 15
+        s = 2
+        lw = 1.5
+        # sswitch ticks off
+        
         mp['r2t'] = {'RL':'RL','Linear':'Linear','Binary':'Cerebellar'}
         
         lab = {}
@@ -832,19 +835,19 @@ def plt_figs(fig,mp,lw=3,fontsize=8,plt_path='./',res_path='./'):
                 
         # derive label from fit
         #labf = lambda a,nu0,n=3 : 'Fit: ' + r'$a=$' + str(round(a,n)
-        #                                ) + r', $\nu_0=$' + str(round(nu0,n))
+         #                               ) + r', $\nu_0=$' + str(round(nu0,n))
         labf = lambda a,nu0,n=3 : 'Fit'
         
         # load dict in alphabetical order
-        outs = [load_obj(file[:-4],res_path) for file in 
-             sorted(os.listdir(res_path)) if (file.endswith(".pkl") and 'fig_4' in file)] # and file.startswith("Supp")]
+        outs = [load_obj(file[:-4],res_path) for file in os.listdir(res_path) if (file.endswith(".pkl") and 'fig_4' in file)] # and file.startswith("Supp")]
+        
+        #[file for file in os.listdir(res_path) if (file.endswith(".pkl") and 'fig_4' in file)]
         # run rules in alphabetical order
         rules = ['Linear','Binary','RL'] # [r for r in mp['rules'] if '-Grad' not in r]
         
         fig1, axs1 = plt.subplots(1,3,figsize=(7.2,3),sharey=False)
         
         plt.subplots_adjust(wspace=0.9, hspace=0.6)
-
         
         for r,out,ax1 in zip(rules,outs,axs1):
                         
@@ -885,6 +888,11 @@ def plt_figs(fig,mp,lw=3,fontsize=8,plt_path='./',res_path='./'):
             #print(plt.gca().get_xlim())
             r2lab = {'Linear':'a','Binary':'b','RL':'c'}
             panel_label(r2lab[r],-0.22 if r=='Linear' else -0.15,ax1,y=1.15)
+            #plt_legend(prop={'size':5.8})
+
+            #ax1.xaxis.grid(False, which='minor')
+            ax1.tick_params(which='minor', length=0, color='white')
+            plt.xlim([0.004,0.05])
 
                     
         plt.savefig(plt_path + 'fig_SI_1.pdf',dpi=300,bbox_inches='tight')
@@ -905,7 +913,7 @@ def plt_figs(fig,mp,lw=3,fontsize=8,plt_path='./',res_path='./'):
                     
             
             ### Fig 2: x=nu y=dm/m ###                
-            plt.sca(ax2[0])
+            plt.sca(ax2[1])
             
             T = np.log if mp['log_scale'] else lambda x:x
     
@@ -914,24 +922,27 @@ def plt_figs(fig,mp,lw=3,fontsize=8,plt_path='./',res_path='./'):
             plt.scatter(xplt,yplt,color='k',alpha=0.5,s=s,label='Simulation')                            
             #plt.xlabel(lab['nu']) # plt.xlabel(r'Input rate $\nu_i$')
             if r == 'Linear':
-                plt.ylabel(lab['dm_m'])                
+                plt.ylabel(lab['dm_m'])
+            plt.xlabel(lab['nu'])
             plt.title('{0}'.format(mp['r2t'][r]))
+            
             fit = Fit(xplt,yplt)
             fit.fit(lambda x,th: th[0]/x*( (xplt/sigm(th[1]) + 1)**0.5 - 1),[1,1])
             a, nu0 = fit.th[0], sigm(fit.th[1])
             yplt_fit = a/xplt*( (xplt/nu0 + 1)**0.5 - 1)
             plt.plot(xplt,yplt_fit,c='r',label=labf(a,nu0),lw=lw)            
             plt_set_logxticks([0.1,1,10],use_sci_format=True)
+            
+            # ticks
             if r=='RL':
                 plt_set_logyticks([0.001,0.005])
                 plt.ylim([0.001,0.005])
             else:
                 plt_set_logyticks([0.001,0.01,0.1])
-                if r == 'Linear':
-                    plt.gca().legend(ncol=1,prop={'size':10})
-            r2lab = {'Linear':'a','Binary':'b','RL':'c'}
-            panel_label(r2lab[r],-0.22 if r=='Linear' else -0.15,ax2[0],y=1.2)
-
+            r2lab = {'Linear':'d','Binary':'e','RL':'f'}
+            panel_label(r2lab[r],-0.22 if r=='Linear' else -0.15,ax2[1],y=1.2)
+            #plt_legend(prop={'size':5.8})
+            
             
             #plt.savefig(plt_path + 'dm_m_vs_nu_{0}.pdf'.format(r),dpi=300,bbox_inches='tight')
             #plt.show(),plt.close()
@@ -939,10 +950,9 @@ def plt_figs(fig,mp,lw=3,fontsize=8,plt_path='./',res_path='./'):
             ### Fig 3: x=nu y=s2/m ###
             
             ## plot
-            plt.sca(ax2[1])
+            plt.sca(ax2[0])
             xplt, yplt = nu/dt, s2_m
-            plt.scatter(xplt,yplt,color='k',alpha=0.5,s=s,label='Simulation')
-            plt.xlabel(lab['nu'])
+            plt.scatter(xplt,yplt,color='k',alpha=0.5,s=s,label='Simulation')            
             if r == 'Linear':
                 plt.ylabel(lab['s2_m'])
             plt.title('{0}'.format(mp['r2t'][r]))
@@ -955,9 +965,8 @@ def plt_figs(fig,mp,lw=3,fontsize=8,plt_path='./',res_path='./'):
             plt.plot(xplt,yplt_fit,c='r',label=labf(a,nu0),lw=lw)            
             plt.gca().set_yscale('log') ,plt.gca().set_xscale('log')
 
-
             ## make nice and save
-            #plt.gca().legend()
+            # ticks
             if mp['log_scale']:
                 #plt.gca().set_xscale('log')
                 plt_set_logxticks([0.1,1,10],use_sci_format=True)
@@ -965,11 +974,15 @@ def plt_figs(fig,mp,lw=3,fontsize=8,plt_path='./',res_path='./'):
                     plt_set_logyticks([0.02,0.05])
                     plt.ylim([0.02,0.05])
                 else:
-                    plt_set_logyticks([0.001,0.01,0.1],use_sci_format=True)
-            r2lab = {'Linear':'d','Binary':'e','RL':'f'}
-            panel_label(r2lab[r],-0.22 if r=='Linear' else -0.15,ax2[1],y=1.2)
-                                        
-        plt.savefig(plt_path + 'fig_SI_2.pdf',dpi=300,bbox_inches='tight')
+                    plt_set_logyticks([0.001,0.01,0.1],use_sci_format=False)
+                    if r == 'Linear':
+                        plt.gca().legend(ncol=1,prop={'size':8})
+                    
+            r2lab = {'Linear':'a','Binary':'b','RL':'c'}        
+            panel_label(r2lab[r],-0.22 if r=='Linear' else -0.15,ax2[0],y=1.2)
+            #plt_legend(prop={'size':5.8})
+            
+        plt.savefig(plt_path + 'fig_SI_2.pdf',dpi=500,bbox_inches='tight')
         plt.show(),plt.close()
         
             #plt.savefig(plt_path + 's2_m_vs_nu_{0}.pdf'.format(r),dpi=300,bbox_inches='tight')
@@ -1000,7 +1013,7 @@ if __name__== "__main__":
     """
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--Figure","-f",default=53,type=int, 
+    parser.add_argument("--Figure","-f",default=4,type=int, 
                         help="Figure to plot")
     parser.add_argument("--i","-i",default=-1,type=int,
                         help="process id on cluster; -1 for local machine")
