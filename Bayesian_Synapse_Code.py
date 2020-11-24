@@ -595,7 +595,8 @@ def plt_timeseries(v,key,dim=0,lw=2,q=2):
         plt.plot(v['tspan'],yplt,'k',linewidth=lw)
         # filter
         yplt, err = v[m][:,dim], v[s2][:,dim]**0.5            
-        plt.fill_between(v['tspan'],yplt-q*err,yplt+q*err,alpha=0.3,color='r')
+        plt.fill_between(v['tspan'],yplt-q*err,yplt+q*err,alpha=0.3,color='r',
+                         lw=0, facecolor='white')
         plt.plot(v['tspan'],yplt,'r',linewidth=lw)
 
       
@@ -1013,7 +1014,7 @@ if __name__== "__main__":
     """
     
     parser = argparse.ArgumentParser()
-    parser.add_argument("--Figure","-f",default=4,type=int, 
+    parser.add_argument("--Figure","-f",default=2,type=int, 
                         help="Figure to plot")
     parser.add_argument("--i","-i",default=-1,type=int,
                         help="process id on cluster; -1 for local machine")
