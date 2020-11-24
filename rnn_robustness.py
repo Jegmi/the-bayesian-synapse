@@ -144,7 +144,7 @@ def plot_gs(data_bayes_gs, data_delta_gs, itrials, ax, legend=True):
 def make_figure(data_bayes, data_bayes_gs, data_delta_gs, itrials):
 
     # Set up row of axes
-    fig = plt.figure(figsize=(7, 3.2))
+    fig = plt.figure(figsize=(5.6, 3.2))
     grid = GridSpec(1, 20, figure=fig, wspace=2, left=0, right=0.95, bottom=0.2, top=0.7)
 
     # Plot Bayesian learning rule error as a function
@@ -171,7 +171,7 @@ def main():
     fig = make_figure(data_bayes, data_bayes_gs, data_delta_gs, itrials_compare)
 
     # Save
-    fig.savefig('rnn_robustness.pdf', bbox_inches='tight')
+    fig.savefig('./figs/rnn_robustness.pdf', bbox_inches='tight')
 
 
 if __name__ == '__main__':

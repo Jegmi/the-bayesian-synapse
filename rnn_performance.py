@@ -219,7 +219,7 @@ def main():
     fig = make_figure(data_delta, data_bayes, itrials_compare)
 
     # Save
-    fig.savefig('rnn_performance.pdf', bbox_inches='tight')
+    fig.savefig('./figs/rnn_performance.pdf', bbox_inches='tight')
 
 
 if __name__ == '__main__':

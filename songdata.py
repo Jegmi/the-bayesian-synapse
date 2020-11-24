@@ -40,7 +40,7 @@ def main(plotit=True):
         yline = intercept + slope * xline
         ax.plot(xline, yline, 'k-', linewidth=1.5)
 
-        fig.savefig('songdata.pdf', bbox_inches='tight')
+        fig.savefig('./figs/songdata.pdf', bbox_inches='tight')
 
 
 if __name__ == '__main__':

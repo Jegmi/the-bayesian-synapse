@@ -11,11 +11,15 @@ Get all figures (stored in ./figs) by running this file.
 import os
 
 # RNN plots
-os.system("python rnn_figs.py")
+os.system("python rnn_performance.py")
+os.system("python rnn_robustness.py")
+
+# Plots with Song et al. data
+os.system("python songdata.py")
 
 # all other plots
-for fig_id in (2,3,4,51):
+for fig_id in (2, 3, 4, 51):
     os.system("python Bayesian_Synapse_Code.py -f {0}".format(fig_id))
 
-#def panel_label(label, x, ax):
+# def panel_label(label, x, ax):
  #   ax.text(x, 1.0, f'\\textbf{{{label}}}', fontsize=rc["axes.labelsize"], transform=ax.transAxes, fontweight='extra bold')
